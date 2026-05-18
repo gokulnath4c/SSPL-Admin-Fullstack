@@ -1,0 +1,22 @@
+services:
+  # Node.js Express Backend Service
+  - type: web
+    name: sspl-admin-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /api/health
+
+  # React Static Frontend Service
+  - type: web
+    name: sspl-admin-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

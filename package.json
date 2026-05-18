@@ -4,6 +4,8 @@
   "private": true,
   "description": "SSPL Admin Panel - Fullstack Repository containing React Frontend and Node/Express Backend",
   "scripts": {
+    "postinstall": "cd backend && npm install",
+    "start": "cd backend && npm start",
     "start:backend": "cd backend && npm start",
     "dev:frontend": "cd frontend && npm run dev",
     "build:frontend": "cd frontend && npm run build"

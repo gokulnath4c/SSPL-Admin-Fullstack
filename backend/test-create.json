@@ -1,0 +1,6 @@
+{
+  "instanceName": "sspl_admin",
+  "token": "sspl_token_123",
+  "integration": "WHATSAPP-BAILEYS",
+  "qrcode": true
+}

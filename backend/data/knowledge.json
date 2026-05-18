@@ -1,0 +1,148 @@
+{
+    "faqs": [
+        {
+            "question": "How can I Register?",
+            "answer": "You can register on our website www.ssplt10.co.in by clicking the 'Register' button and filling out the form. Or visit our Instagram Page @ssplt10 and Click Register in Bio."
+        },
+        {
+            "question": "What is the age eligibility?",
+            "answer": "Participants must be 12 years or older as of the date of registration. Those below 12 will be considered as guest participants."
+        },
+        {
+            "question": "What information is required for registration?",
+            "answer": "You need to provide your Name, Mobile Number, Date of Birth, E-Mail, State, and Player roles (Batsman, Bowler, All-rounder)."
+        },
+        {
+            "question": "Do I need to upload any documents?",
+            "answer": "No documents are needed at the time of online registration. However, a government-issued ID with DOB (like Aadhaar) is mandatory for verification at the trials."
+        },
+        {
+            "question": "Can I register for multiple state trials?",
+            "answer": "Yes, you can register for multiple state trials to increase your chances."
+        },
+        {
+            "question": "Can I register for more than one person at the same time?",
+            "answer": "Yes, however, you can use the 'Team Registration' option to register a group."
+        },
+        {
+            "question": "Can I register as a team?",
+            "answer": "Yes, team registration is available, subject to Individual Performance and Assessment."
+        },
+        {
+            "question": "Can international players register?",
+            "answer": "Yes, foreign players can register by paying a $60 fee. Please note that SSPL registration cannot be used for VISA processing."
+        },
+        {
+            "question": "What is the registration fee?",
+            "answer": "The registration fee is ₹699 plus 18% GST."
+        },
+        {
+            "question": "Is the registration fee refundable?",
+            "answer": "No, the registration fee is non-refundable and non-transferable under any circumstances."
+        },
+        {
+            "question": "What payment modes are accepted?",
+            "answer": "We accept payments via GPay, UPI, Credit/Debit cards, and Net Banking."
+        },
+        {
+            "question": "Is cash payment accepted?",
+            "answer": "No, cash payments are NOT accepted."
+        },
+        {
+            "question": "I made a payment but didn't receive a confirmation mail. What should I do?",
+            "answer": "If you haven't received confirmation, please take a screenshot of your payment and share it with our WhatsApp number 8807775960. We will verify and send you the confirmation mail will be sent to your email ID. Your Registered Mobile Number and Email ID is the Primary mode of information and contact."
+        },
+        {
+            "question": "What is the format of the trials?",
+            "answer": "Levels 1 to 3 are Nets trials. Level 4 involves AI-based assessment for bowling and batting. Level 5 is a 10-over ground match."
+        },
+        {
+            "question": "How are players selected?",
+            "answer": "Players are selected using traditional methods in primary trials (12 balls). Advanced levels use AI techniques. The selectors' decision is final."
+        },
+        {
+            "question": "Where will the trials be held?",
+            "answer": "You will be allotted the nearest trial location based on your state. Venue details will be sent via email/WhatsApp 5 days before the trial."
+        },
+        {
+            "question": "Is on-spot registration available?",
+            "answer": "Yes, spot registration is available at the trial zones. Venue Details will be displayed in our Official Website and Our Social Media Pages."
+        },
+        {
+            "question": "What equipment should I bring?",
+            "answer": "Players must bring their own cricket kits. Balls will be provided. Company bats may be used if yours are unavailable. Fiber bats are not allowed."
+        },
+        {
+            "question": "What ball is used in the tournament?",
+            "answer": "The 'Sixit Lite Tennis Ball' will be used."
+        },
+        {
+            "question": "What should I wear for trials?",
+            "answer": "Proper sports attire and shoes are mandatory."
+        },
+        {
+            "question": "When will the trials get over?",
+            "answer": "SSPL is a Pan-Indian Tennis Ball Cricket League that is purely talent-based. The trials will continue until we have scouted talent across all states of India. There is no fixed end date — our goal is to find the best cricket talent from every corner of the country."
+        },
+        {
+            "question": "Why are trials conducted across so many cities?",
+            "answer": "SSPL believes talent exists everywhere. To ensure no deserving player is left out, we conduct trials across multiple cities and states, covering all regions of India. This Pan-India approach makes SSPL a truly inclusive league."
+        },
+        {
+            "question": "Is SSPL only for professional cricketers?",
+            "answer": "No! SSPL is purely talent-based. Whether you are a professional cricketer, a club-level player, or a street cricket enthusiast, if you have the skill, you are welcome to register and showcase your talent."
+        },
+        {
+            "question": "What type of cricket is played in SSPL?",
+            "answer": "SSPL is a Tennis Ball Cricket League. All matches and trials use the 'Sixit Lite Tennis Ball'. It is a T10 format league, making it fast-paced and exciting."
+        },
+        {
+            "question": "Can I attend trials in a different state?",
+            "answer": "Yes, you can register and attend trials in any state. Many players choose to attend multiple trials across different locations to maximize their chances of selection."
+        },
+        {
+            "question": "How do I check my trial results?",
+            "answer": "You can check your trial results directly by visiting: https://ssplt10.co.in/trial-results"
+        },
+        {
+            "question": "What information do I need to look up my results?",
+            "answer": "You only need the mobile number you used during registration. It must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9."
+        },
+        {
+            "question": "What does my result show?",
+            "answer": "Your result displays your name and selection status — either 'Selected' or 'Not Selected'. Selected players will also see a celebration animation with Player Selected for Level 1 – Double Eagle (Nets Trials), Leve2 – Kohinoor (Net Trials), Level 3 – Player Platinum (Net Trials), Level 4 – Prince Titan (AI Assessment), Level 5 – Palladian (Play – Offs)"
+        },
+        {
+            "question": "I searched but no results were found. What should I do?",
+            "answer": "Ensure you are entering the exact mobile number used at the time of registration. If you still don't see results, your trial results may not yet be published. Contact us on WhatsApp at 8807775960 for assistance."
+        },
+        {
+            "question": "When are the trial results published?",
+            "answer": "Results are published within a few days after the trial is completed. You will also be notified via email and WhatsApp once results are available. Trial results will be published after all selectors submit their marks to the management and the consolidated results from all trial centres are reviewed and approved. Once approved, the results will be uploaded to the official portal by the IT Department and shared simultaneously on the website."
+        },
+        {
+            "question": "Can I look up results for someone else?",
+            "answer": "Yes, you can search for any player's results if you have their registered mobile number."
+        },
+        {
+            "question": "What does 'Selected' mean in my result?",
+            "answer": "'Selected' means you have qualified for the next level of trials. You will receive further details about the next steps via email and WhatsApp."
+        },
+        {
+            "question": "Can I download or export my trial result?",
+            "answer": "Yes, once your results are displayed, you can use the export option to download your result details."
+        },
+        {
+            "question": "Does SSPL provide travel or accommodation?",
+            "answer": "No, all travel, food, and accommodation expenses must be borne by the player."
+        },
+        {
+            "question": "What happens if I provide false information?",
+            "answer": "Providing incorrect or false information will lead to immediate disqualification."
+        },
+        {
+            "question": "Whom should I contact for further assistance?",
+            "answer": "For any queries, you can contact us on WhatsApp at 8807775960 or email us at customercare@ssplt10.co.in."
+        }
+    ]
+}

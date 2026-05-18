@@ -1,0 +1,9 @@
+[PASS] Column 'state' accepted (but insert failed due to other Not Null constraints).Error: null value in column "date_of_birth" of relation "player_registrations" violates not-null constraint
+[PASS] Column 'city' accepted (but insert failed due to other Not Null constraints).Error: null value in column "date_of_birth" of relation "player_registrations" violates not-null constraint
+[PASS] Column 'pincode' accepted (but insert failed due to other Not Null constraints).Error: null value in column "date_of_birth" of relation "player_registrations" violates not-null constraint
+[FAIL] Column 'dob' causes Schema Cache Error (PGRST204).
+[FAIL] Column 'gender' causes Schema Cache Error (PGRST204).
+[FAIL] Column 'role' causes Schema Cache Error (PGRST204).
+[PASS] Column 'payment_status' accepted (but insert failed due to other Not Null constraints).Error: null value in column "date_of_birth" of relation "player_registrations" violates not-null constraint
+[PASS] Column 'payment_amount' accepted (but insert failed due to other Not Null constraints).Error: null value in column "date_of_birth" of relation "player_registrations" violates not-null constraint
+[FAIL] Column 'verification_status' causes Schema Cache Error (PGRST204).

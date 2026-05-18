@@ -1,0 +1,11 @@
+{
+  "name": "sspl-admin-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SSPL Admin Panel - Fullstack Repository containing React Frontend and Node/Express Backend",
+  "scripts": {
+    "start:backend": "cd backend && npm start",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build"
+  }
+}

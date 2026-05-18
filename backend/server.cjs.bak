@@ -1,0 +1,60 @@
+require('dotenv').config({ path: __dirname + '/.env.production' });
+const express = require('express');
+const Razorpay = require('razorpay');
+const cors = require('cors');
+
+const app = express();
+app.use(express.json());
+
+// Enable CORS for your frontend domain
+app.use(cors({ origin: 'https://ssplt10.co.in' }));
+
+// Initialize Razorpay client
+const rzp = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// Create Razorpay order
+app.post('/api/create-order', async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || isNaN(amount)) {
+      return res.status(400).json({ success: false, error: 'Invalid amount' });
+    }
+
+    // Log for debugging
+    console.log(`[${new Date().toISOString()}] Creating Razorpay order: ${amount} paise`);
+
+    const options = {
+      amount: Number(amount), // amount in paise
+      currency: 'INR',
+      receipt: `rcpt_${Date.now()}`,
+      payment_capture: 1,
+    };
+
+    const order = await rzp.orders.create(options);
+
+    res.json({
+      success: true,
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    });
+  } catch (err) {
+    console.error('Razorpay order creation failed:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Start server
+const PORT = process.env.PORT || 3002;
+app.listen(PORT, () => {
+  console.log(`🚀 API server running on port ${PORT}`);
+});

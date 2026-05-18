@@ -1,0 +1,139 @@
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import fetch from 'node-fetch';
+import { fileURLToPath } from 'url';
+import cors from 'cors';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+
+// -------------------- CORS --------------------
+const allowedOrigins = ['https://ssplt10.cloud', 'https://www.ssplt10.cloud'];
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow curl/postman
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('CORS policy does not allow this origin'), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
+
+// -------------------- Middleware --------------------
+app.use(express.json()); // parse JSON
+app.use(express.urlencoded({ extended: true })); // parse form-data
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// Serve static frontend files
+const frontendDist = path.join(__dirname, 'dist');
+app.use(express.static(frontendDist, { maxAge: '1d', etag: true }));
+
+// -------------------- Logging --------------------
+app.use((req, res, next) => {
+  if (req.path.includes('favicon') || req.path === '/favicon.ico') {
+    console.log(`🔍 Favicon request: ${req.method} ${req.path} - User-Agent: ${req.get('User-Agent')}`);
+  }
+  next();
+});
+
+// -------------------- Health Check --------------------
+app.get('/health', async (req, res) => {
+  const healthData = {
+    status: 'ok',
+    message: 'Frontend server is running',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    memory: {
+      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+    },
+    services: {}
+  };
+
+  // Static files check
+  try {
+    await fs.promises.access(frontendDist, fs.constants.R_OK);
+    healthData.services.staticFiles = { status: 'ok', message: 'Static files accessible' };
+  } catch (err) {
+    healthData.services.staticFiles = { status: 'error', message: err.message };
+    healthData.status = 'degraded';
+  }
+
+  res.status(healthData.status === 'ok' ? 200 : 503).json(healthData);
+});
+
+// -------------------- API Proxy --------------------
+const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:3001';
+app.use('/api', async (req, res) => {
+  const backendPath = req.path; // keep path intact
+  try {
+    const backendRes = await fetch(`${backendUrl}${backendPath}`, {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: backendUrl.replace(/^https?:\/\//, ''),
+        'x-forwarded-for': req.ip,
+        'x-forwarded-proto': req.protocol,
+        'x-forwarded-host': req.get('host'),
+        'x-real-ip': req.ip
+      },
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body)
+    });
+
+    backendRes.headers.forEach((value, key) => res.setHeader(key, value));
+    const body = await backendRes.text();
+    res.status(backendRes.status).send(body);
+  } catch (err) {
+    console.error('Backend proxy error:', err);
+    res.status(500).json({
+      error: 'Backend Service Unavailable',
+      message: 'The backend service is currently unavailable. Please try again later.',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// -------------------- SPA Fallback --------------------
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
+});
+
+// -------------------- Error Handler --------------------
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err);
+  const isDev = process.env.NODE_ENV !== 'production';
+  res.status(err.status || 500).json({
+    error: 'Internal Server Error',
+    message: isDev ? err.message : 'Something went wrong',
+    ...(isDev && { stack: err.stack })
+  });
+});
+
+// -------------------- Graceful Shutdown --------------------
+['SIGINT', 'SIGTERM'].forEach(signal => {
+  process.on(signal, () => {
+    console.log(`${signal} received, shutting down gracefully`);
+    process.exit(0);
+  });
+});
+
+// -------------------- Start Server --------------------
+const port = process.env.PORT || 3001;
+app.listen(port, () => {
+  console.log(`🚀 Frontend server running on port ${port}`);
+  console.log(`📁 Serving static files from: ${frontendDist}`);
+  console.log(`❤️ Health check at: http://localhost:${port}/health`);
+  console.log(`🌐 Backend API proxy available at: /api -> ${backendUrl}`);
+});

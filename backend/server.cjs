@@ -125,8 +125,12 @@ app.use('/api', chatRoutes);
 app.use('/api', whatsappRoutes);
 
 
-// Start server
+// Start server (Only if not running in Vercel serverless environment)
 const PORT = process.env.PORT || 3003;
-app.listen(PORT, () => {
-  console.log(`🚀 API server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 API server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

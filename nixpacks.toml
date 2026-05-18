@@ -1,0 +1,12 @@
+[providers]
+node = true
+python = false
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmd = "echo 'Install handled by custom build command'"
+
+[start]
+cmd = "echo 'Start handled by custom start command'"

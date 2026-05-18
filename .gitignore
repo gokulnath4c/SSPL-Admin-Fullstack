@@ -13,6 +13,15 @@ dist/
 dist-ssr/
 build/
 
+# Python Virtual Environments & Cache
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
 # Environment variables
 .env
 .env.local

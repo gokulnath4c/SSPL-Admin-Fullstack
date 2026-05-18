@@ -1,0 +1,12 @@
+[providers]
+node = true
+python = false
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmd = "npm install"
+
+[start]
+cmd = "node server.cjs"

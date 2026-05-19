@@ -24,13 +24,7 @@ const EMAIL_HTML = `
         </ul>
     </div>
 
-    <div style="background-color: #fff; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin: 20px 0;">
-        <p style="margin: 0 0 10px 0; font-weight: bold;">🏏 SSPL Trial Schedule:</p>
-        <ul style="margin: 0; padding-left: 20px;">
-            <li>Vijayawada – 10.05.2026</li>
-            <li>Jaipur – 17.05.2026</li>
-        </ul>
-    </div>
+
 
     <p style="color: #b91c1c; font-weight: bold;">⚠️ Your slot will be confirmed only after payment.</p>
     <p>Complete your payment immediately before this opportunity slips away.</p>
@@ -68,9 +62,7 @@ Southern Street Premier League (SSPL) is India’s largest tennis ball cricket l
 ✅ 100% Performance-Based Selection
 ✅ One day. One opportunity. A chance to change your career.
 
-🏏 SSPL Trial Schedule:
-- Vijayawada: 10.05.2026
-- Jaipur: 17.05.2026
+
 
 ⚠️ Your slot will be confirmed only after payment.
 Complete your payment immediately before this opportunity slips away.

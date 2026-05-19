@@ -30,7 +30,7 @@ export default function DashboardPage() {
     try {
         if (type === 'in' || type === 'out') {
             const data = await import('../data/in_out_players.json');
-            playersList = data.default[type.toUpperCase()] || [];
+            playersList = (data.default as any)[type.toUpperCase()] || [];
         } else {
             // Live fetching logic
             if (type === 'captured') {
@@ -38,28 +38,50 @@ export default function DashboardPage() {
                     .select('full_name, phone, email, city, state, payment_status')
                     .in('payment_status', ['captured', 'success', 'completed', 'paid'])
                     .order('created_at', { ascending: false });
-                playersList = data?.map(p => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status })) || [];
+                playersList = data?.map((p: any) => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status })) || [];
             } else if (type === 'registrations') {
                 const { data } = await supabase.from('player_registrations')
                     .select('full_name, phone, email, city, state, payment_status')
                     .order('created_at', { ascending: false });
-                playersList = data?.map(p => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status })) || [];
+                playersList = data?.map((p: any) => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status })) || [];
             } else if (type === 'failed') {
                 const { data } = await supabase.from('player_registrations')
                     .select('full_name, phone, email, city, state, payment_status')
-                    .in('payment_status', ['failed', 'failure'])
                     .order('created_at', { ascending: false });
-                playersList = data?.map(p => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status })) || [];
+                const capturedStatuses = ['captured', 'completed', 'paid', 'success'];
+                playersList = (data || [])
+                    .filter((p: any) => !capturedStatuses.includes(p.payment_status?.toLowerCase() || ''))
+                    .map((p: any) => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status || 'failed' }));
             } else if (type === 'not_selected') {
-                const { data } = await supabase.from('trial_progress')
-                    .select('full_name, phone, final_status')
+                const { data } = await supabase.from('trial_view')
+                    .select('name, phone, email, city, state, final_status')
                     .eq('final_status', 'REJECTED');
-                playersList = data?.map(p => ({ name: p.full_name, phone: p.phone, status: 'Not Selected' })) || [];
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Not Selected' })) || [];
             } else if (type === 'absentees') {
-                const { data } = await supabase.from('trial_progress')
-                    .select('full_name, phone, l1_attendance, l2_attendance, l3_attendance')
+                const { data } = await supabase.from('trial_view')
+                    .select('name, phone, email, city, state, l1_attendance, l2_attendance, l3_attendance')
                     .or('l1_attendance.eq.ABSENT,l2_attendance.eq.ABSENT,l3_attendance.eq.ABSENT');
-                playersList = data?.map(p => ({ name: p.full_name, phone: p.phone, status: 'Absent' })) || [];
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Absent' })) || [];
+            } else if (type === 'level1_selected') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, phone, email, city, state, l1_result')
+                    .eq('l1_result', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Selected Level 1' })) || [];
+            } else if (type === 'level2_selected') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, phone, email, city, state, l2_result')
+                    .eq('l2_result', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Selected Level 2' })) || [];
+            } else if (type === 'level3_selected') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, phone, email, city, state, l3_result')
+                    .eq('l3_result', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Selected Level 3' })) || [];
+            } else if (type === 'final_selected') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, phone, email, city, state, final_status')
+                    .eq('final_status', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Selected Final' })) || [];
             }
         }
     } catch (e) {
@@ -248,6 +270,70 @@ export default function DashboardPage() {
               <p className="text-4xl font-bold text-gray-900 mt-2">{stats?.totalAbsentees || 0}</p>
             </div>
             <div className="text-5xl">🏃</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Selection Funnel & Finalists */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <span>🎯</span> Selection Funnel & Finalists
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Selected Level 1 */}
+          <div 
+            onClick={() => handleCardClick('Selected Level 1', 'level1_selected')}
+            className="bg-linear-to-br from-cyan-50 to-cyan-100 rounded-lg shadow p-6 border border-cyan-200 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-cyan-700 text-sm font-medium">Selected Level 1</p>
+                <p className="text-4xl font-bold text-cyan-900 mt-2">{stats?.level1Selected || 0}</p>
+              </div>
+              <div className="text-5xl">🏏</div>
+            </div>
+          </div>
+
+          {/* Selected Level 2 */}
+          <div 
+            onClick={() => handleCardClick('Selected Level 2', 'level2_selected')}
+            className="bg-linear-to-br from-teal-50 to-teal-100 rounded-lg shadow p-6 border border-teal-200 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-teal-700 text-sm font-medium">Selected Level 2</p>
+                <p className="text-4xl font-bold text-teal-900 mt-2">{stats?.level2Selected || 0}</p>
+              </div>
+              <div className="text-5xl">⚡</div>
+            </div>
+          </div>
+
+          {/* Selected Level 3 */}
+          <div 
+            onClick={() => handleCardClick('Selected Level 3', 'level3_selected')}
+            className="bg-linear-to-br from-indigo-50 to-indigo-100 rounded-lg shadow p-6 border border-indigo-200 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-indigo-700 text-sm font-medium">Selected Level 3</p>
+                <p className="text-4xl font-bold text-indigo-900 mt-2">{stats?.level3Selected || 0}</p>
+              </div>
+              <div className="text-5xl">🔥</div>
+            </div>
+          </div>
+
+          {/* Overall Final Selected */}
+          <div 
+            onClick={() => handleCardClick('Overall Final Selected', 'final_selected')}
+            className="bg-linear-to-br from-amber-50 to-amber-100 rounded-lg shadow p-6 border border-amber-200 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-amber-700 text-sm font-medium">Overall Final Selected</p>
+                <p className="text-4xl font-bold text-amber-900 mt-2">{stats?.selectedCount || 0}</p>
+              </div>
+              <div className="text-5xl">🏆</div>
+            </div>
           </div>
         </div>
       </div>

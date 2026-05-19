@@ -14,7 +14,7 @@ export default function ReportsPage() {
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   
   // Level dropdown states for reports that require Level params
-  const [callForTrialsLevel, setCallForTrialsLevel] = useState('level_1');
+  const [callForTrialsLevel, setCallForTrialsLevel] = useState('1');
   const [selectionSheetLevel, setSelectionSheetLevel] = useState('1');
 
   const reports: ReportConfig[] = [
@@ -44,7 +44,7 @@ export default function ReportsPage() {
       title: 'Trials - Call for Trials',
       description: 'List of players allocated to a specific trial level.',
       rpcName: 'get_call_for_trials_report',
-      params: { target_level: callForTrialsLevel },
+      params: { target_level: parseInt(callForTrialsLevel) },
       icon: '🏟️'
     },
     {
@@ -141,9 +141,9 @@ export default function ReportsPage() {
                   value={callForTrialsLevel}
                   onChange={(e) => setCallForTrialsLevel(e.target.value)}
                 >
-                  <option value="level_1">Level 1</option>
-                  <option value="level_2">Level 2</option>
-                  <option value="level_3">Level 3</option>
+                  <option value="1">Level 1</option>
+                  <option value="2">Level 2</option>
+                  <option value="3">Level 3</option>
                 </select>
               )}
               {report.id === 'selection_sheet' && (

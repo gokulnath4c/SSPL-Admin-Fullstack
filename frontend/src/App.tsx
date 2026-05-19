@@ -3,6 +3,7 @@ import MainLayout from '@layout/MainLayout'
 import AdminLayout from '@layout/AdminLayout'
 import HomePage from '@pages/HomePage'
 import LoginPage from '@pages/LoginPage'
+import SignupPage from '@pages/SignupPage'
 import DashboardPage from '@pages/DashboardPage'
 import EnhancedRegistrationsPage from '@pages/EnhancedRegistrationsPage'
 import ReportsPage from '@pages/ReportsPage';
@@ -29,6 +30,7 @@ function App() {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
 
       {/* Public Home Page */}
       <Route path="/" element={<MainLayout />}>

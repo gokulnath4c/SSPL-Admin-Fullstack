@@ -38,20 +38,47 @@ export default function DashboardPage() {
                     .select('full_name, phone, email, city, state, payment_status')
                     .in('payment_status', ['captured', 'success', 'completed', 'paid'])
                     .order('created_at', { ascending: false });
-                playersList = data?.map((p: any) => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status })) || [];
+                
+                // Deduplicate by phone number or email
+                const uniquePlayers = new Map();
+                (data || []).forEach((p: any) => {
+                    const key = p.phone || p.email;
+                    if (key && !uniquePlayers.has(key)) {
+                        uniquePlayers.set(key, { name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status });
+                    }
+                });
+                playersList = Array.from(uniquePlayers.values());
             } else if (type === 'registrations') {
                 const { data } = await supabase.from('player_registrations')
                     .select('full_name, phone, email, city, state, payment_status')
                     .order('created_at', { ascending: false });
-                playersList = data?.map((p: any) => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status })) || [];
+                
+                // Deduplicate by phone number or email
+                const uniquePlayers = new Map();
+                (data || []).forEach((p: any) => {
+                    const key = p.phone || p.email;
+                    if (key && !uniquePlayers.has(key)) {
+                        uniquePlayers.set(key, { name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status });
+                    }
+                });
+                playersList = Array.from(uniquePlayers.values());
             } else if (type === 'failed') {
                 const { data } = await supabase.from('player_registrations')
                     .select('full_name, phone, email, city, state, payment_status')
                     .order('created_at', { ascending: false });
                 const capturedStatuses = ['captured', 'completed', 'paid', 'success'];
-                playersList = (data || [])
+                
+                // Deduplicate by phone number or email
+                const uniquePlayers = new Map();
+                (data || [])
                     .filter((p: any) => !capturedStatuses.includes(p.payment_status?.toLowerCase() || ''))
-                    .map((p: any) => ({ name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status || 'failed' }));
+                    .forEach((p: any) => {
+                        const key = p.phone || p.email;
+                        if (key && !uniquePlayers.has(key)) {
+                            uniquePlayers.set(key, { name: p.full_name, phone: p.phone, email: p.email, city: p.city, state: p.state, payment_status: p.payment_status || 'failed' });
+                        }
+                    });
+                playersList = Array.from(uniquePlayers.values());
             } else if (type === 'not_selected') {
                 const { data } = await supabase.from('trial_view')
                     .select('name, phone, email, city, state, final_status')

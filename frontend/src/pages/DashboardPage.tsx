@@ -4,6 +4,7 @@ import { useAuth } from '@hooks/useAuth'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import DrillDownModal from '../components/DrillDownModal'
+import CoimbatoreCampaignWidget from '../components/CoimbatoreCampaignWidget'
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
 const PAYMENT_COLORS = ['#10B981', '#F59E0B']
@@ -278,6 +279,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Campaign Tracking */}
+      <CoimbatoreCampaignWidget />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -78,7 +78,7 @@ const TrialsAnalyticsReport: React.FC = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">In</p>
-            <h3 className="text-2xl font-bold text-slate-900">1,535</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{(stats.funnel.trial_pool || 0) - (stats.attrition.rejected || 0)}</h3>
           </div>
         </div>
 
@@ -88,7 +88,7 @@ const TrialsAnalyticsReport: React.FC = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Out</p>
-            <h3 className="text-2xl font-bold text-slate-900">1,198</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{stats.attrition.rejected}</h3>
           </div>
         </div>
 

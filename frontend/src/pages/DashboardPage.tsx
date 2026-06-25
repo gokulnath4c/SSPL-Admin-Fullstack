@@ -1,7 +1,7 @@
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { useDashboard } from '@hooks/useDashboard'
 import { useAuth } from '@hooks/useAuth'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import DrillDownModal from '../components/DrillDownModal'
 
@@ -22,18 +22,38 @@ export default function DashboardPage() {
     players: [],
     loading: false
   });
+  
+  const [excelSheets, setExcelSheets] = useState<Array<{id: string, title: string, count: number}>>([]);
+
+  useEffect(() => {
+    fetch('/data/sheets/sheets_meta.json')
+      .then(res => res.json())
+      .then(data => setExcelSheets(data))
+      .catch(err => console.error('Failed to load excel sheets metadata', err));
+  }, []);
 
   const handleCardClick = async (title: string, type: string) => {
     setDrillDown(prev => ({ ...prev, isOpen: true, title, loading: true, players: [] }));
     
     let playersList: any[] = [];
     try {
-        if (type === 'in' || type === 'out') {
-            const data = await import('../data/in_out_players.json');
-            playersList = (data.default as any)[type.toUpperCase()] || [];
-        } else {
-            // Live fetching logic
-            if (type === 'captured') {
+        if (type === 'in') {
+            const [{ data: selectedData }, { data: notCalledData }] = await Promise.all([
+                supabase.from('trial_view').select('name, mobile, email, state, city, proficiency, final_status').eq('final_status', 'SELECTED'),
+                supabase.from('trial_view').select('name, mobile, email, state, city, proficiency').neq('l1_called', true)
+            ]);
+            const selectedList = selectedData?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'In (Selected)' })) || [];
+            const notCalledList = notCalledData?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'In (Not Called)' })) || [];
+            playersList = [...selectedList, ...notCalledList];
+        } else if (type === 'not_called_for') {
+            const { data } = await supabase.from('trial_view').select('name, mobile, email, state, city, proficiency').neq('l1_called', true);
+            playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Not Called For' })) || [];
+        } else if (type === 'out') {
+            const { data } = await supabase.from('trial_view')
+                .select('name, mobile, email, state, city, proficiency, final_status')
+                .eq('final_status', 'REJECTED');
+            playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Out' })) || [];
+        } else if (type === 'captured') {
                 const { data } = await supabase.from('player_registrations')
                     .select('full_name, phone, email, city, state, payment_status')
                     .in('payment_status', ['captured', 'success', 'completed', 'paid'])
@@ -79,38 +99,111 @@ export default function DashboardPage() {
                         }
                     });
                 playersList = Array.from(uniquePlayers.values());
+            } else if (type === 'called') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency, l1_called')
+                    .eq('l1_called', true);
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Called For' })) || [];
+            } else if (type === 'not_called_for') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .in('mobile', ['+911111111111', '+9109150247561', '9777321130', '7781853070', '8058484816', '9058037504', '7355753179']);
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Not Called For' })) || [];
             } else if (type === 'not_selected') {
                 const { data } = await supabase.from('trial_view')
-                    .select('name, phone, email, city, state, final_status')
+                    .select('name, mobile, email, state, city, proficiency, final_status')
                     .eq('final_status', 'REJECTED');
-                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Not Selected' })) || [];
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Not Selected' })) || [];
             } else if (type === 'absentees') {
                 const { data } = await supabase.from('trial_view')
-                    .select('name, phone, email, city, state, l1_attendance, l2_attendance, l3_attendance')
+                    .select('name, mobile, email, state, city, proficiency, l1_attendance, l2_attendance, l3_attendance')
                     .or('l1_attendance.eq.ABSENT,l2_attendance.eq.ABSENT,l3_attendance.eq.ABSENT');
-                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Absent' })) || [];
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Absent' })) || [];
             } else if (type === 'level1_selected') {
                 const { data } = await supabase.from('trial_view')
-                    .select('name, phone, email, city, state, l1_result')
+                    .select('name, mobile, email, state, city, proficiency, l1_result')
                     .eq('l1_result', 'SELECTED');
-                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Selected Level 1' })) || [];
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Selected Level 1' })) || [];
             } else if (type === 'level2_selected') {
                 const { data } = await supabase.from('trial_view')
-                    .select('name, phone, email, city, state, l2_result')
+                    .select('name, mobile, email, state, city, proficiency, l2_result')
                     .eq('l2_result', 'SELECTED');
-                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Selected Level 2' })) || [];
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Selected Level 2' })) || [];
             } else if (type === 'level3_selected') {
                 const { data } = await supabase.from('trial_view')
-                    .select('name, phone, email, city, state, l3_result')
+                    .select('name, mobile, email, state, city, proficiency, l3_result')
                     .eq('l3_result', 'SELECTED');
-                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Selected Level 3' })) || [];
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Selected Level 3' })) || [];
             } else if (type === 'final_selected') {
                 const { data } = await supabase.from('trial_view')
-                    .select('name, phone, email, city, state, final_status')
+                    .select('name, mobile, email, state, city, proficiency, final_status')
                     .eq('final_status', 'SELECTED');
-                playersList = data?.map((p: any) => ({ name: p.name, phone: p.phone, email: p.email, city: p.city, state: p.state, status: 'Selected Final' })) || [];
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Selected Final' })) || [];
+            } else if (type === 'in_split_0') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .eq('l1_attendance', 'ABSENT')
+                    .eq('l2_attendance', 'ABSENT')
+                    .eq('l3_attendance', 'ABSENT');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Completely Absent' })) || [];
+            } else if (type === 'in_split_1') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .eq('l1_result', 'SELECTED')
+                    .eq('l2_result', 'SELECTED')
+                    .eq('l3_result', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Fully Selected' })) || [];
+            } else if (type === 'in_split_2') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .eq('l1_result', 'SELECTED')
+                    .eq('l2_attendance', 'ABSENT')
+                    .eq('l3_attendance', 'ABSENT');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Selected L1, Absent Rest' })) || [];
+            } else if (type === 'in_split_3') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .eq('l1_result', 'SELECTED')
+                    .eq('l2_result', 'SELECTED')
+                    .eq('l3_attendance', 'ABSENT');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Selected L1 & L2, Absent L3' })) || [];
+            } else if (type === 'in_split_4') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .neq('l1_called', true);
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Not Called For' })) || [];
+            } else if (type === 'level1_selected_level2_absent') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .eq('l1_result', 'SELECTED')
+                    .eq('l2_attendance', 'ABSENT')
+                    .eq('l3_attendance', 'ABSENT');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Level 1 Selected, Level 2 Absent' })) || [];
+            } else if (type === 'proficiency_0') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .ilike('proficiency', '%BATSMAN%')
+                    .eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Batsman' })) || [];
+            } else if (type === 'proficiency_1') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .ilike('proficiency', '%BOWLER%')
+                    .eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Bowler' })) || [];
+            } else if (type === 'proficiency_2') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .or('proficiency.ilike.%ALL ROUNDER%,proficiency.ilike.%AR%')
+                    .eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'All Rounder' })) || [];
+            } else if (type === 'proficiency_3') {
+                const { data } = await supabase.from('trial_view')
+                    .select('name, mobile, email, state, city, proficiency')
+                    .or('proficiency.is.null,proficiency.eq.,proficiency.eq.NA,proficiency.ilike.N/A%')
+                    .eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED');
+                playersList = data?.map((p: any) => ({ name: p.name, phone: p.mobile, email: p.email, city: p.city || '-', state: p.state, proficiency: p.proficiency || '-', status: 'Not Specified' })) || [];
             }
-        }
     } catch (e) {
         console.error('Drill down fetch error:', e);
     }
@@ -187,29 +280,29 @@ export default function DashboardPage() {
       )}
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Registrations */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Total Visitors */}
         <div 
-          onClick={() => handleCardClick('Total Registrations', 'registrations')}
+          onClick={() => handleCardClick('Total Visitors', 'registrations')}
           className="bg-white rounded-lg shadow p-6 border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium">Total Registrations</p>
+              <p className="text-gray-500 text-sm font-medium">Total Visitors</p>
               <p className="text-4xl font-bold text-gray-900 mt-2">{stats?.totalRegistrations || 0}</p>
             </div>
             <div className="text-4xl text-blue-100">📋</div>
           </div>
         </div>
 
-        {/* Total Captured */}
+        {/* Total Registrations */}
         <div 
-          onClick={() => handleCardClick('Total Captured', 'captured')}
+          onClick={() => handleCardClick('Total Registrations', 'captured')}
           className="bg-linear-to-br from-green-50 to-green-100 rounded-lg shadow p-6 border border-green-200 cursor-pointer hover:shadow-md transition-shadow"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-700 text-sm font-medium">Total Captured</p>
+              <p className="text-green-700 text-sm font-medium">Total Registrations</p>
               <p className="text-4xl font-bold text-green-900 mt-2">{stats?.capturedCount || 0}</p>
             </div>
             <div className="text-4xl">💰</div>
@@ -230,20 +323,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* States Covered */}
-        <div className="bg-linear-to-br from-purple-50 to-purple-100 rounded-lg shadow p-6 border border-purple-200">
+        {/* Not Called For */}
+        <div 
+          onClick={() => handleCardClick('Not Called For', 'not_called_for')}
+          className="bg-linear-to-br from-red-50 to-red-100 rounded-lg shadow p-6 border border-red-200 cursor-pointer hover:shadow-md transition-shadow"
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-700 text-sm font-medium">States Covered</p>
-              <p className="text-4xl font-bold text-purple-900 mt-2">{stats?.stateDistribution.length || 0}</p>
+              <p className="text-red-700 text-sm font-medium">Not Called For</p>
+              <p className="text-4xl font-bold text-red-900 mt-2">{stats?.notCalledForCount || 0}</p>
             </div>
-            <div className="text-5xl">🗺️</div>
+            <div className="text-4xl">📞</div>
           </div>
         </div>
+
       </div>
 
       {/* Selection & Attendance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         {/* In */}
         <div 
           onClick={() => handleCardClick('In Players', 'in')}
@@ -271,35 +368,42 @@ export default function DashboardPage() {
             <div className="text-5xl">✈️</div>
           </div>
         </div>
-
-        {/* Total Not Selected */}
-        <div 
-          onClick={() => handleCardClick('Total Not Selected', 'not_selected')}
-          className="bg-linear-to-br from-red-50 to-red-100 rounded-lg shadow p-6 border border-red-200 cursor-pointer hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-red-700 text-sm font-medium">Total Not Selected</p>
-              <p className="text-4xl font-bold text-red-900 mt-2">{stats?.notSelectedCount || 0}</p>
-            </div>
-            <div className="text-5xl">❌</div>
-          </div>
-        </div>
-
-        {/* Total Absentees */}
-        <div 
-          onClick={() => handleCardClick('Total Absentees', 'absentees')}
-          className="bg-linear-to-br from-gray-50 to-gray-100 rounded-lg shadow p-6 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-700 text-sm font-medium">Total Absentees</p>
-              <p className="text-4xl font-bold text-gray-900 mt-2">{stats?.totalAbsentees || 0}</p>
-            </div>
-            <div className="text-5xl">🏃</div>
-          </div>
-        </div>
       </div>
+
+      {/* 'IN' Players Breakdown */}
+      {stats && stats.inPlayersSplit && stats.inPlayersSplit.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <span>🔍</span> "IN" Players Analysis ({stats.inStationCount} Breakdown)
+          </h2>
+          <div className="bg-white rounded-lg shadow border border-indigo-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-indigo-50/50">
+              <p className="text-sm text-gray-600">This breakdown explains how the {stats.inStationCount.toLocaleString()} "IN" players are categorized based on their Level 1, Level 2, and Level 3 statuses from the Master Data.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x border-gray-200">
+              {stats.inPlayersSplit.map((item, idx) => (
+                <div 
+                  key={idx} 
+                  className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => handleCardClick(item.label, `in_split_${idx}`)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{item.label}</p>
+                      <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+                    </div>
+                    <div className="text-2xl ml-4">{item.icon}</div>
+                  </div>
+                  <div className="mt-4">
+                    <span className="text-3xl font-bold text-indigo-600">{item.count}</span>
+                    <span className="text-sm font-medium text-gray-500 ml-2">players</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selection Funnel & Finalists */}
       <div className="space-y-4">
@@ -349,21 +453,67 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Overall Final Selected */}
-          <div 
-            onClick={() => handleCardClick('Overall Final Selected', 'final_selected')}
-            className="bg-linear-to-br from-amber-50 to-amber-100 rounded-lg shadow p-6 border border-amber-200 cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-amber-700 text-sm font-medium">Overall Final Selected</p>
-                <p className="text-4xl font-bold text-amber-900 mt-2">{stats?.selectedCount || 0}</p>
-              </div>
-              <div className="text-5xl">🏆</div>
+        </div>
+      </div>
+
+      {/* Proficiency Breakdown */}
+      {stats && stats.proficiencySplit && stats.proficiencySplit.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <span>⚔️</span> Fully Selected Players Proficiency Breakdown
+          </h2>
+          <div className="bg-white rounded-lg shadow border border-indigo-100 overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x border-gray-200">
+              {stats.proficiencySplit.map((item, idx) => (
+                <div 
+                  key={idx} 
+                  className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => handleCardClick(item.label, `proficiency_${idx}`)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{item.label}</p>
+                      <p className="text-xs text-gray-500 mt-1">{item.description}</p>
+                    </div>
+                    <div className="text-2xl ml-4">{item.icon}</div>
+                  </div>
+                  <div className="mt-4">
+                    <span className="text-3xl font-bold text-indigo-600">{item.count}</span>
+                    <span className="text-sm font-medium text-gray-500 ml-2">players</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Excel Master Data Sheets */}
+      {excelSheets.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <span>📊</span> Excel Master Data Logs
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {excelSheets.map(sheet => (
+              <div 
+                key={sheet.id}
+                onClick={() => handleCardClick(sheet.title, `excel_sheet_${sheet.id}`)}
+                className="bg-white rounded-lg shadow p-6 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between"
+              >
+                <div>
+                  <p className="text-slate-600 text-sm font-medium line-clamp-2" title={sheet.title}>{sheet.title}</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-3">{sheet.count}</p>
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-xs text-blue-600 font-medium">View Records →</span>
+                  <div className="text-3xl opacity-20">📑</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <DrillDownModal
         isOpen={drillDown.isOpen}

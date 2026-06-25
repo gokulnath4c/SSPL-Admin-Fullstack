@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import MainLayout from '@layout/MainLayout'
-import AdminLayout from '@layout/AdminLayout'
+import MainLayout from './layout/MainLayout'
+import AdminLayout from './layout/AdminLayout'
 import HomePage from '@pages/HomePage'
 import LoginPage from '@pages/LoginPage'
 import SignupPage from '@pages/SignupPage'

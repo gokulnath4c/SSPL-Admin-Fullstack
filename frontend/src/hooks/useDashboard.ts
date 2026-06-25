@@ -17,9 +17,12 @@ export interface DashboardStats {
   level1Selected: number
   level2Selected: number
   level3Selected: number
+  level1SelectedLevel2Absent: number
   stateDistribution: Array<{ state: string; count: number }>
   trialDistribution: Array<{ trial: string; count: number }>
   registrationTrend: Array<{ date: string; count: number }>
+  inPlayersSplit: Array<{ label: string; count: number; icon: string; description: string }>
+  proficiencySplit: Array<{ label: string; count: number; icon: string; description: string }>
 }
 
 interface UseDashboardReturn {
@@ -46,9 +49,12 @@ const defaultStats: DashboardStats = {
   level1Selected: 0,
   level2Selected: 0,
   level3Selected: 0,
+  level1SelectedLevel2Absent: 0,
   stateDistribution: [],
   trialDistribution: [],
   registrationTrend: [],
+  inPlayersSplit: [],
+  proficiencySplit: [],
 }
 
 // Mock registrations for demonstration
@@ -75,11 +81,34 @@ export function useDashboard(): UseDashboardReturn {
     setIsUsingMockData(false)
 
     try {
-      // 1. Fetch core registrations
-      const { data: registrations, error: registrationsError } = await supabase
-        .from('v_admin_player_registrations')
-        .select('*')
-        .limit(2000)
+      // 1. Fetch core registrations using pagination to get ALL records for accurate metrics
+      let allRegistrations: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+      let registrationsError: any = null;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('v_admin_player_registrations')
+          .select('phone, email, payment_status, state, created_at')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) {
+          registrationsError = error;
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allRegistrations = allRegistrations.concat(data);
+          if (data.length < pageSize) hasMore = false;
+          else page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      const registrations = allRegistrations;
 
       // 2. Fetch Trial Overall Stats (from RPC)
       let trialStats: any = null
@@ -142,15 +171,14 @@ export function useDashboard(): UseDashboardReturn {
       const funnel = trialStats?.funnel || {}
       const attrition = trialStats?.attrition || {}
 
-      const calledForCount = funnel.l1_called || 0
-      const notCalledForCount = (funnel.l1_pool || 0) - calledForCount
-      const selectedCount = funnel.net_finalists || workflowStats?.selected || 0
-      const notSelectedCount = attrition.rejected || workflowStats?.not_selected || 0
-
-      // Level-wise
-      const level1Selected = funnel.l1_selected || 0
-      const level2Selected = funnel.l2_selected || 0
-      const level3Selected = funnel.l3_selected || 0
+      let calledForCount = 0;
+      let notCalledForCount = 0;
+      let selectedCount = 0;
+      let notSelectedCount = 0;
+      
+      let level1Selected = 0;
+      let level2Selected = 0;
+      let level3Selected = 0;
 
       // State-wise distribution
       const stateMap = new Map<string, number>()
@@ -177,8 +205,8 @@ export function useDashboard(): UseDashboardReturn {
       // Registration trend (last 30 days)
       const trendMap = new Map<string, number>()
       dataToUse.forEach((r: any) => {
-        if (r.registration_date) {
-          const date = new Date(r.registration_date).toISOString().split('T')[0]
+        if (r.created_at) {
+          const date = new Date(r.created_at).toISOString().split('T')[0]
           trendMap.set(date, (trendMap.get(date) || 0) + 1)
         }
       })
@@ -196,15 +224,63 @@ export function useDashboard(): UseDashboardReturn {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       const filteredTrend = registrationTrend.filter((item) => new Date(item.date) >= thirtyDaysAgo)
 
+      const [
+        { count: count0 },
+        { count: count1 },
+        { count: count2 },
+        { count: count3 },
+        { count: batsmanCount },
+        { count: bowlerCount },
+        { count: arCount },
+        { count: notSpecifiedCount },
+        { count: totalAbsenteesCount },
+        { count: level1SelectedCount },
+        { count: level2SelectedCount },
+        { count: level3SelectedCount },
+        { count: finalSelectedCount },
+        { count: finalRejectedCount },
+        { count: l1CalledCount },
+        { count: totalTrialCandidatesCount }
+      ] = await Promise.all([
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('l1_attendance', 'ABSENT').eq('l2_attendance', 'ABSENT').eq('l3_attendance', 'ABSENT'), // count0: Completely Absent
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED'), // count1: Finally Selected
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('l1_result', 'SELECTED').eq('l2_attendance', 'ABSENT').eq('l3_attendance', 'ABSENT'), // count2: L2 Selected (but not processed for L3)
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_attendance', 'ABSENT'), // count3: L3 Absent
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).or('proficiency.ilike.%BATSMAN%,proficiency.ilike.%BATTING%').eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).or('proficiency.ilike.%BOWLER%,proficiency.ilike.%BOWLING%').eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).or('proficiency.ilike.%ALL ROUNDER%,proficiency.ilike.%AR%,proficiency.ilike.%ALL-ROUNDER%').eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).or('proficiency.is.null,proficiency.eq.,proficiency.eq.NA,proficiency.ilike.N/A%').eq('l1_result', 'SELECTED').eq('l2_result', 'SELECTED').eq('l3_result', 'SELECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).or('l1_attendance.eq.ABSENT,l2_attendance.eq.ABSENT,l3_attendance.eq.ABSENT'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('l1_result', 'SELECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('l2_result', 'SELECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('l3_result', 'SELECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('final_status', 'SELECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('final_status', 'REJECTED'),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true }).eq('l1_called', true),
+        supabase.from('trial_view').select('*', { count: 'exact', head: true })
+      ]);
+
+      level1Selected = level1SelectedCount || 0;
+      level2Selected = level2SelectedCount || 0;
+      level3Selected = level3SelectedCount || 0;
+
+      const totalTrialCandidates = totalTrialCandidatesCount || 0;
+      calledForCount = l1CalledCount || 0;
+      notCalledForCount = Math.max(0, totalTrialCandidates - calledForCount);
+      selectedCount = finalSelectedCount || 0;
+      notSelectedCount = Math.max(0, calledForCount - selectedCount);
+      const computedOutStationCount = finalRejectedCount || 0;
+      const inStationTotal = (count1 || 0) + (count2 || 0) + (count3 || 0) + (count0 || 0) + notCalledForCount;
+
       setStats({
         totalRegistrations,
         capturedCount,
         pendingCount: totalRegistrations - capturedCount,
         failedTransactionsCount,
         netFailedCount,
-        totalAbsentees: attrition.absent || 0,
-        inStationCount: 1535, // As per Excel "IN / OUT" column
-        outStationCount: 1198, // As per Excel "IN / OUT" column
+        totalAbsentees: totalAbsenteesCount || 0,
+        inStationCount: inStationTotal,
+        outStationCount: computedOutStationCount,
         calledForCount,
         notCalledForCount,
         selectedCount,
@@ -212,9 +288,23 @@ export function useDashboard(): UseDashboardReturn {
         level1Selected,
         level2Selected,
         level3Selected,
+        level1SelectedLevel2Absent: count2 || 0,
         stateDistribution,
         trialDistribution,
         registrationTrend: filteredTrend.length > 0 ? filteredTrend : registrationTrend,
+        inPlayersSplit: [
+          { label: 'Finally Selected', count: count1 || 0, icon: '🏆', description: 'Cleared all 3 levels (SELECTED)' },
+          { label: 'Level 2 Selected', count: count2 || 0, icon: '🔥', description: 'Selected in Level 2' },
+          { label: 'Level 3 Absent', count: count3 || 0, icon: '👀', description: 'Attended Level 2, Absent Level 3' },
+          { label: 'Completely Absent', count: count0 || 0, icon: '🏃', description: 'Never showed up (ABSENT for all)' },
+          { label: 'Not Called Players', count: notCalledForCount, icon: '📅', description: 'Recent registrations not yet called' }
+        ],
+        proficiencySplit: [
+          { label: 'Batsman', count: batsmanCount || 0, icon: '🏏', description: 'Players with Batsman proficiency' },
+          { label: 'Bowler', count: bowlerCount || 0, icon: '⚾', description: 'Players with Bowler proficiency' },
+          { label: 'All Rounder', count: arCount || 0, icon: '⭐', description: 'Players with All Rounder proficiency' },
+          { label: 'Not Specified', count: notSpecifiedCount || 0, icon: '❓', description: 'Players with no proficiency listed' }
+        ],
       })
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch dashboard stats'

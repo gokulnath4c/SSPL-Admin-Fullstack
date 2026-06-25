@@ -26,7 +26,7 @@ import TrialsReportViewer from '../components/TrialsReportViewer'
 import ImportVerificationTab from '../components/ImportVerificationTab'
 
 export default function TrialsWorkflowPage() {
-    const [activeTab, setActiveTab] = useState('completed')
+    const [activeTab, setActiveTab] = useState('bucket')
     const [showReportsModal, setShowReportsModal] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -627,44 +627,46 @@ export default function TrialsWorkflowPage() {
             </div>
 
             {/* Dashboard Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                 <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-600 text-sm">Candidates Pool</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-1">{dashboardStats?.funnel?.l1_pool || 0}</p>
-                        </div>
-                        <div className="text-4xl text-blue-500">📋</div>
+                    <div className="flex flex-col">
+                        <p className="text-gray-600 text-xs font-semibold tracking-wider uppercase mb-1">Called For</p>
+                        <p className="text-3xl font-bold text-gray-900">{dashboardStats?.funnel?.l1_called || 0}</p>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-600 text-sm">L1 Attended</p>
-                            <p className="text-3xl font-bold text-amber-600 mt-1">{dashboardStats?.funnel?.l1_attended || 0}</p>
-                        </div>
-                        <div className="text-4xl text-amber-500">🏏</div>
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-gray-400">
+                    <div className="flex flex-col">
+                        <p className="text-gray-600 text-xs font-semibold tracking-wider uppercase mb-1">Not Called For</p>
+                        <p className="text-3xl font-bold text-gray-900">{Math.max(0, (dashboardStats?.funnel?.trial_pool || 0) - (dashboardStats?.funnel?.l1_called || 0))}</p>
                     </div>
                 </div>
 
                 <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-600 text-sm">L1 Selected</p>
-                            <p className="text-3xl font-bold text-green-600 mt-1">{dashboardStats?.funnel?.l1_selected || 0}</p>
-                        </div>
-                        <div className="text-4xl text-green-500">✓</div>
+                    <div className="flex flex-col">
+                        <p className="text-gray-600 text-xs font-semibold tracking-wider uppercase mb-1">Present</p>
+                        <p className="text-3xl font-bold text-green-600">{dashboardStats?.funnel?.l1_attended || 0}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+                    <div className="flex flex-col">
+                        <p className="text-gray-600 text-xs font-semibold tracking-wider uppercase mb-1">Absent</p>
+                        <p className="text-3xl font-bold text-red-600">{Math.max(0, (dashboardStats?.funnel?.l1_called || 0) - (dashboardStats?.funnel?.l1_attended || 0))}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-indigo-500">
+                    <div className="flex flex-col">
+                        <p className="text-gray-600 text-xs font-semibold tracking-wider uppercase mb-1">In</p>
+                        <p className="text-3xl font-bold text-indigo-600">{(dashboardStats?.funnel?.trial_pool || 0) - (dashboardStats?.attrition?.rejected || 0)}</p>
                     </div>
                 </div>
 
                 <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-600 text-sm">Net Finalists</p>
-                            <p className="text-3xl font-bold text-purple-600 mt-1">{dashboardStats?.funnel?.net_finalists || 0}</p>
-                        </div>
-                        <div className="text-4xl text-purple-500">🏆</div>
+                    <div className="flex flex-col">
+                        <p className="text-gray-600 text-xs font-semibold tracking-wider uppercase mb-1">Out</p>
+                        <p className="text-3xl font-bold text-purple-600">{dashboardStats?.attrition?.rejected || 0}</p>
                     </div>
                 </div>
             </div>
@@ -681,12 +683,7 @@ export default function TrialsWorkflowPage() {
             <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex space-x-4 border-b border-gray-200 mb-6">
 
-                    <button
-                        onClick={() => setActiveTab('completed')}
-                        className={`pb-2 px-4 text-sm font-medium ${activeTab === 'completed' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Trials List
-                    </button>
+
 
                     <button
                         onClick={() => setActiveTab('bucket')}
@@ -743,136 +740,12 @@ export default function TrialsWorkflowPage() {
                     {activeTab === 'import-data' && <ImportVerificationTab />}
                     {activeTab === 'reports' && <TrialsReportViewer />}
 
-                    {activeTab === 'bucket' && <TrialLevelView level={1} hideCalled={true} />}
+                    {activeTab === 'bucket' && <TrialLevelView level={1} />}
                     {activeTab === 'trial-level-1' && <TrialLevelView level={1} />}
                     {activeTab === 'trial-level-2' && <TrialLevelView level={2} />}
                     {activeTab === 'trial-level-3' && <TrialLevelView level={3} />}
 
-                    {/* Trials List Tab */}
-                    {activeTab === 'completed' && (
-                        <div>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Trials List</h3>
-                                <div className="flex space-x-4">
-                                    <input
-                                        type="text"
-                                        placeholder="Filter by Location (City/State)"
-                                        value={filterListLocation}
-                                        onChange={(e) => setFilterListLocation(e.target.value)}
-                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                    />
-                                    <button
-                                        onClick={handleRemoveFromTrialsList}
-                                        disabled={selectedCompleted.length === 0 || loading}
-                                        className="bg-red-600 hover:bg-red-700 text-whites font-semibold py-2 px-6 rounded-lg transition duration-200 disabled:opacity-50 text-white mr-2"
-                                    >
-                                        Remove ({selectedCompleted.length})
-                                    </button>
-                                    <button
-                                        onClick={handleOpenAllocationModal}
-                                        disabled={selectedCompleted.length === 0 || loading}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition duration-200 disabled:opacity-50"
-                                    >
-                                        {loading ? 'Allocating...' : `Allocate to Trials (${selectedCompleted.length})`}
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="bg-white rounded-lg shadow overflow-y-auto max-h-[600px]">
-                                <table className="w-full">
-                                    <thead className="bg-gray-50 border-b border-gray-200">
-                                        <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedCompleted.length === completedRegistrations.length && completedRegistrations.length > 0}
-                                                    onChange={handleSelectAllCompleted}
-                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                            </th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Unique ID</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Player Name</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Email</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Phone</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">State</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">City</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Pincode</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {completedRegistrations
-                                            .filter(reg => {
-                                                if (!filterListLocation) return true;
-                                                const searchTerm = filterListLocation.toLowerCase();
-                                                return (
-                                                    (reg.city && reg.city.toLowerCase().includes(searchTerm)) ||
-                                                    (reg.state && reg.state.toLowerCase().includes(searchTerm)) ||
-                                                    (reg.pincode && reg.pincode.toLowerCase().includes(searchTerm))
-                                                );
-                                            })
-                                            .length > 0 ? (
-                                            completedRegistrations
-                                                .filter(reg => {
-                                                    if (!filterListLocation) return true;
-                                                    const searchTerm = filterListLocation.toLowerCase();
-                                                    return (
-                                                        (reg.city && reg.city.toLowerCase().includes(searchTerm)) ||
-                                                        (reg.state && reg.state.toLowerCase().includes(searchTerm)) ||
-                                                        (reg.pincode && reg.pincode.toLowerCase().includes(searchTerm))
-                                                    );
-                                                })
-                                                .map((reg) => (
-                                                    <tr key={reg.workflow_id} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="px-6 py-4 text-left text-sm">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedCompleted.includes(reg.workflow_id)}
-                                                                onChange={() => handleSelectCompleted(reg.workflow_id)}
-                                                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                            />
-                                                        </td>
-                                                        <td className="px-6 py-4 text-left text-sm text-gray-900 font-medium">{reg.trial_uid || '-'}</td>
-                                                        <td className="px-6 py-4 text-left text-sm text-gray-900 font-medium">{reg.full_name}</td>
-                                                        <td className="px-6 py-4 text-left text-sm text-gray-600">{reg.email}</td>
-                                                        <td className="px-6 py-4 text-left text-sm text-gray-600">{reg.phone}</td>
-                                                        <td className="px-6 py-4 text-left text-sm text-gray-600">{reg.state || 'N/A'}</td>
-                                                        <td className="px-6 py-4 text-left text-sm text-gray-600">{reg.city || 'N/A'}</td>
-                                                        <td className="px-6 py-4 text-left text-sm text-gray-600">{reg.pincode || 'N/A'}</td>
-                                                        <td className="px-6 py-4 text-left text-sm space-x-2 flex">
-                                                            <button
-                                                                onClick={() => handleViewClick(reg)}
-                                                                className="text-blue-600 hover:text-blue-900"
-                                                                title="View Details"
-                                                            >
-                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                                </svg>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleEditClick(reg)}
-                                                                className="text-green-600 hover:text-green-900"
-                                                                title="Edit Details"
-                                                            >
-                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                </svg>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan={9} className="px-6 py-4 text-left text-center text-sm text-gray-500">
-                                                    No completed registrations found
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+
 
                 </div>
             </div>

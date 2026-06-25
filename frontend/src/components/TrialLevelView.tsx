@@ -126,8 +126,17 @@ export default function TrialLevelView({ level, strictMode = false, hideCalled =
                         {!loading && candidates.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-gray-500">No eligible candidates match internal filters.</td></tr>}
                         {!loading && candidates.map(c => {
                             const isCalled = c[`l${level}_called`];
-                            const currentAttendance = c[`l${level}_attendance`];
-                            const currentResult = c[`l${level}_result`];
+                            let currentAttendance = c[`l${level}_attendance`];
+                            let currentResult = c[`l${level}_result`];
+
+                            // Apply dynamic business logic
+                            if (c.l3_result === 'SELECTED') {
+                                currentResult = 'SELECTED';
+                            } else if (c.l1_result === 'REJECTED' || c.l2_result === 'REJECTED' || c.l3_result === 'REJECTED') {
+                                if (currentResult !== 'SELECTED') currentResult = 'REJECTED';
+                            } else if (c.l1_attendance === 'ABSENT' || c.l2_attendance === 'ABSENT' || c.l3_attendance === 'ABSENT') {
+                                if (!currentResult || currentResult === 'PENDING') currentResult = 'PENDING';
+                            }
 
                             return (
                                 <tr key={c.candidate_id} className="hover:bg-blue-50 transition-colors">

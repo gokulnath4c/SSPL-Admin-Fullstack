@@ -82,6 +82,7 @@ export const getTrialOverallStats = async () => {
             total_attempts: totalTrans,
             captured_transactions: capturedTransCount,
             captured_unique: capturedPhones,
+            trial_pool: rpcData.funnel.l1_pool,
             l1_pool: totalTrans,
         },
         attrition: {

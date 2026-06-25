@@ -34,7 +34,7 @@ export default function EnhancedRegistrationsPage() {
         if (searchTerm && !(
             reg.player_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             reg.player_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            reg.phone?.includes(searchTerm)
+            (reg.phone && String(reg.phone).includes(searchTerm))
         )) {
             return false
         }

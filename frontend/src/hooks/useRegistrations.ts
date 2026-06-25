@@ -96,33 +96,7 @@ export function useRegistrations(): UseRegistrationsReturn {
     setIsUsingMockData(false)
 
     try {
-      // NOTE: Temporarily bypassing RPC to ensure we get all fields (City, Pincode) which might be missing in the RPC response
-
-      // Try fetching from the improved view first
-      // Try fetching from the improved view first
-      const { data: viewData, error: viewError } = await supabase
-        .from('v_admin_player_registrations')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1000)
-
-      if (!viewError && viewData && viewData.length > 0) {
-        // Map created_at to registration_date for UI compatibility
-        const mappedViewData = viewData.map((reg: any) => ({
-          ...reg,
-          // Ensure registration_date is always a string or null, prioritizing created_at if view renamed it
-          registration_date: reg.created_at || reg.registration_date || new Date().toISOString()
-        }));
-        setRegistrations(mappedViewData as PlayerRegistration[])
-        return
-      }
-
-      if (viewError) {
-        console.warn('View query failed, falling back to direct table query:', viewError.message)
-      }
-
-
-      // Fallback: Try direct query from player_registrations table
+      // Direct query from player_registrations table (Bypassing view to avoid DISTINCT ON dropping captured payments)
       const { data: directData, error: directError } = await supabase
         .from('player_registrations')
         .select(`
@@ -188,8 +162,38 @@ export function useRegistrations(): UseRegistrationsReturn {
       const directDataCombined = allRegistrations
 
       if (directDataCombined && directDataCombined.length > 0) {
+        // Deduplicate by email, prioritizing 'captured'/'completed' payments, then most recent
+        const emailMap = new Map<string, any>();
+        for (const reg of directDataCombined) {
+          const email = reg.player_email?.toLowerCase().trim();
+          if (!email) continue;
+          
+          if (!emailMap.has(email)) {
+            emailMap.set(email, reg);
+          } else {
+            const existing = emailMap.get(email);
+            const isRegSuccess = reg.payment_status === 'captured' || reg.payment_status === 'completed' || reg.payment_status === 'approved' || reg.payment_status === 'paid';
+            const isExistingSuccess = existing.payment_status === 'captured' || existing.payment_status === 'completed' || existing.payment_status === 'approved' || existing.payment_status === 'paid';
+            
+            if (isRegSuccess && !isExistingSuccess) {
+              emailMap.set(email, reg); // Prioritize success
+            } else if (!isRegSuccess && isExistingSuccess) {
+              // Keep existing
+            } else {
+              // Tie-breaker: most recent updated_at or created_at (registration_date)
+              const regDate = new Date(reg.registration_date || 0).getTime();
+              const existingDate = new Date(existing.registration_date || 0).getTime();
+              if (regDate > existingDate) {
+                emailMap.set(email, reg);
+              }
+            }
+          }
+        }
+
+        const uniqueRegistrations = Array.from(emailMap.values());
+
         // Map the data to PlayerRegistration format
-        const mappedData = directDataCombined.map((reg: any) => ({
+        const mappedData = uniqueRegistrations.map((reg: any) => ({
           id: reg.id,
           player_name: reg.player_name,
           player_email: reg.player_email,
